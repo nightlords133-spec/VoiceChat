@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1419">
+<meta name="author" content="NightLord РВЕ">
+<title>Голосовой чат</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%2336c37a'/%3E%3Cpath d='M12 5a2.5 2.5 0 0 0-2.5 2.5v4.5a2.5 2.5 0 0 0 5 0V7.5A2.5 2.5 0 0 0 12 5zm-5 7h1.5a3.5 3.5 0 0 0 7 0H17a5 5 0 0 1-4.25 4.94V19h-1.5v-2.06A5 5 0 0 1 7 12z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0f1419;--panel:#161d24;--panel2:#1d2630;--line:#26313c;
+  --text:#e6edf3;--muted:#8b98a5;--accent:#36c37a;--accent-d:#2aa365;
+  --mine:#1f3b2d;--danger:#e5534b;--radius:16px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input{font:inherit;color:var(--text)}
+.hidden{display:none!important}
+
+/* вход */
+#login{min-height:100%;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:28px 22px}
+.card h1{margin:0 0 4px;font-size:22px}
+.card p{margin:0 0 20px;color:var(--muted)}
+.field{display:block;width:100%;padding:12px 14px;margin-bottom:12px;background:var(--bg);border:1px solid var(--line);border-radius:12px;outline:none}
+.field:focus{border-color:var(--accent)}
+.btn{width:100%;padding:12px;border-radius:12px;background:var(--accent);color:#04140b;font-weight:600}
+.btn:hover{background:var(--accent-d)}
+.err{color:var(--danger);min-height:20px;margin-top:10px;font-size:14px}
+.sign{margin-top:18px;text-align:center;color:var(--muted);font-size:12px}
+
+/* чат */
+#chat{height:100%;display:flex;flex-direction:column;max-width:760px;margin:0 auto}
+header{display:flex;align-items:center;gap:10px;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));border-bottom:1px solid var(--line);background:var(--panel)}
+header .title{font-weight:600}
+header .online{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:1px}
+.dot.on{background:var(--accent)}
+.iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--muted);flex:none}
+.iconbtn:hover{background:var(--panel2);color:var(--text)}
+#list{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:6px}
+.empty{margin:auto;color:var(--muted);text-align:center}
+.day{align-self:center;color:var(--muted);font-size:12px;margin:10px 0 4px;background:var(--panel);padding:3px 10px;border-radius:10px}
+.msg{max-width:82%;align-self:flex-start;background:var(--panel2);border-radius:var(--radius);border-bottom-left-radius:6px;padding:8px 12px 6px;position:relative}
+.msg.mine{align-self:flex-end;background:var(--mine);border-bottom-left-radius:var(--radius);border-bottom-right-radius:6px}
+.msg .who{font-size:13px;font-weight:600;color:var(--accent);margin-bottom:2px}
+.msg.mine .who{display:none}
+.msg .txt{white-space:pre-wrap;word-wrap:break-word}
+.msg .foot{display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:2px}
+.msg .del{color:var(--muted);font-size:11px;padding:0 2px;opacity:0;transition:opacity .15s}
+.msg:hover .del,.msg:focus-within .del{opacity:1}
+@media (hover:none){.msg .del{opacity:.7}}
+.voice{display:flex;align-items:center;gap:10px;min-width:220px;padding-top:2px}
+.play{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#04140b;display:grid;place-items:center;flex:none}
+.play svg{width:18px;height:18px}
+.bar{flex:1;height:28px;display:flex;align-items:center;gap:2px;cursor:pointer}
+.bar i{flex:1;background:var(--muted);opacity:.45;border-radius:2px;min-width:2px}
+.bar i.p{background:var(--accent);opacity:1}
+.vdur{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
+.voice.unheard .vdur::after{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-left:5px;vertical-align:1px}
+
+/* ввод */
+footer{border-top:1px solid var(--line);background:var(--panel);padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.row{display:flex;align-items:center;gap:8px}
+#text{flex:1;min-width:0;padding:11px 14px;background:var(--bg);border:1px solid var(--line);border-radius:22px;outline:none}
+#text:focus{border-color:var(--accent)}
+.round{width:46px;height:46px;border-radius:50%;background:var(--accent);color:#04140b;display:grid;place-items:center;flex:none;touch-action:none;user-select:none;-webkit-user-select:none}
+.round svg{width:22px;height:22px}
+.round.red{background:var(--danger);color:#fff}
+#recRow .info{flex:1;display:flex;align-items:center;gap:10px;color:var(--text);font-variant-numeric:tabular-nums}
+.pulse{width:10px;height:10px;border-radius:50%;background:var(--danger);animation:pl 1s infinite}
+@keyframes pl{50%{opacity:.25}}
+#recRow .cancel{color:var(--muted);padding:10px 12px;border-radius:12px}
+#recRow .cancel:hover{background:var(--panel2);color:var(--text)}
+.hint{color:var(--muted);font-size:12px;text-align:center;margin-top:6px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;color:#fff;padding:8px 14px;border-radius:10px;font-size:14px;max-width:90%;text-align:center;z-index:9}
+</style>
+</head>
+<body>
+
+<section id="login" class="hidden">
+  <form class="card" id="loginForm" autocomplete="on">
+    <h1>Голосовой чат</h1>
+    <p>Введите имя и общий пароль</p>
+    <input class="field" id="name" name="username" placeholder="Ваше имя" maxlength="32" required autocomplete="username">
+    <input class="field" id="pass" name="password" type="password" placeholder="Пароль" required autocomplete="current-password">
+    <button class="btn" type="submit">Войти</button>
+    <div class="err" id="loginErr"></div>
+    <div class="sign">NightLord РВЕ</div>
+  </form>
+</section>
+
+<section id="chat" class="hidden">
+  <header>
+    <div style="min-width:0;flex:1;display:flex;flex-direction:column">
+      <span class="title">Голосовой чат</span>
+      <span class="online"><span class="dot" id="connDot"></span><span id="online">подключение…</span></span>
+    </div>
+    <button class="iconbtn" id="logout" title="Выйти" aria-label="Выйти">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+    </button>
+  </header>
+
+  <main id="list"><div class="empty">Сообщений пока нет.<br>Нажмите на микрофон, чтобы записать голосовое.</div></main>
+
+  <footer>
+    <div class="row" id="inputRow">
+      <input id="text" placeholder="Сообщение" maxlength="2000" autocomplete="off" enterkeyhint="send">
+      <button class="round" id="micBtn" title="Записать голосовое" aria-label="Записать голосовое">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+      </button>
+      <button class="round hidden" id="sendText" title="Отправить" aria-label="Отправить">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5V14l9-2-9-2V3.5L22 12z"/></svg>
+      </button>
+    </div>
+    <div class="row hidden" id="recRow">
+      <button class="cancel" id="recCancel">Отмена</button>
+      <div class="info"><span class="pulse"></span><span id="recTime">0:00</span></div>
+      <button class="round" id="recSend" title="Отправить голосовое" aria-label="Отправить голосовое">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5V14l9-2-9-2V3.5L22 12z"/></svg>
+      </button>
+    </div>
+    <div class="hint" id="hint">Нажмите 🎤 — запись, ещё раз ➤ — отправить. Можно удерживать: отпустите — отправится.</div>
+  </footer>
+</section>
+
+<div id="toast" class="hidden"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>';
+const MAX_REC = 300; // секунд
+
+let me = null, es = null;
+const msgs = new Map();
+let unread = 0;
+const heard = loadHeard();
+
+function toast(t, ms = 2500) {
+  const el = $("#toast"); el.textContent = t; el.classList.remove("hidden");
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.add("hidden"), ms);
+}
+function loadHeard() { try { return new Set(JSON.parse(localStorage.getItem("vc_heard") || "[]")); } catch { return new Set(); } }
+function saveHeard() { try { localStorage.setItem("vc_heard", JSON.stringify([...heard].slice(-2000))); } catch {} }
+
+async function api(path, body, extra = {}) {
+  const opt = { credentials: "same-origin", ...extra };
+  if (body !== undefined && !(body instanceof Blob)) {
+    opt.method = "POST"; opt.headers = { "Content-Type": "application/json" }; opt.body = JSON.stringify(body);
+  }
+  const r = await fetch(path, opt);
+  let data = null; try { data = await r.json(); } catch {}
+  if (r.status === 401 && path !== "/api/me") { showLogin(); throw new Error("Нужно войти заново"); }
+  if (!r.ok) throw new Error((data && data.error) || ("Ошибка " + r.status));
+  return data;
+}
+
+/* ---------- вход ---------- */
+function showLogin() {
+  if (es) { es.close(); es = null; }
+  $("#chat").classList.add("hidden"); $("#login").classList.remove("hidden");
+  $("#name").value = localStorage.getItem("vc_name") || "";
+  ($("#name").value ? $("#pass") : $("#name")).focus();
+}
+$("#loginForm").addEventListener("submit", async e => {
+  e.preventDefault(); $("#loginErr").textContent = "";
+  try {
+    const d = await api("/api/login", { name: $("#name").value, password: $("#pass").value });
+    localStorage.setItem("vc_name", d.name); $("#pass").value = "";
+    enterChat(d.name);
+  } catch (err) { $("#loginErr").textContent = err.message; }
+});
+$("#logout").onclick = async () => { try { await api("/api/logout", {}); } catch {} msgs.clear(); showLogin(); };
+
+function enterChat(name) {
+  me = name;
+  $("#login").classList.add("hidden"); $("#chat").classList.remove("hidden");
+  connect();
+}
+
+/* ---------- поток событий ---------- */
+function connect() {
+  if (es) es.close();
+  es = new EventSource("/api/events");
+  es.addEventListener("hello", async () => {
+    $("#connDot").classList.add("on");
+    try { const d = await api("/api/messages"); msgs.clear(); d.messages.forEach(m => msgs.set(m.id, m)); renderAll(); } catch {}
+  });
+  es.addEventListener("message", e => addMsg(JSON.parse(e.data), true));
+  es.addEventListener("delete", e => { const { id } = JSON.parse(e.data); msgs.delete(id); renderAll(); });
+  es.addEventListener("online", e => {
+    const u = JSON.parse(e.data).users;
+    $("#online").textContent = "в сети: " + (u.length ? u.join(", ") : "никого");
+  });
+  es.onerror = async () => {
+    $("#connDot").classList.remove("on"); $("#online").textContent = "переподключение…";
+    try { const r = await fetch("/api/me", { credentials: "same-origin" }); if (r.status === 401) showLogin(); } catch {}
+  };
+}
+
+/* ---------- отрисовка ---------- */
+const fmtDur = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+const fmtTime = ts => new Date(ts).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+const fmtDay = ts => {
+  const d = new Date(ts), t = new Date(), y = new Date(Date.now() - 864e5);
+  if (d.toDateString() === t.toDateString()) return "Сегодня";
+  if (d.toDateString() === y.toDateString()) return "Вчера";
+  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: d.getFullYear() === t.getFullYear() ? undefined : "numeric" });
+};
+function wave(id, n = 36) { // псевдо-волна, стабильная для каждого сообщения
+  let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const out = []; for (let i = 0; i < n; i++) { h = (h * 1103515245 + 12345) >>> 0; out.push(25 + (h % 75)); } return out;
+}
+
+function msgEl(m) {
+  const el = document.createElement("div");
+  el.className = "msg" + (m.user === me ? " mine" : ""); el.id = "m-" + m.id;
+  const who = document.createElement("div"); who.className = "who"; who.textContent = m.user; el.append(who);
+  if (m.type === "voice") {
+    const v = document.createElement("div");
+    v.className = "voice" + (m.user !== me && !heard.has(m.id) ? " unheard" : "");
+    const b = document.createElement("button"); b.className = "play"; b.innerHTML = ICON_PLAY; b.setAttribute("aria-label", "Воспроизвести");
+    const bar = document.createElement("div"); bar.className = "bar";
+    wave(m.id).forEach(h => { const i = document.createElement("i"); i.style.height = h + "%"; bar.append(i); });
+    const d = document.createElement("span"); d.className = "vdur"; d.textContent = fmtDur(m.dur);
+    v.append(b, bar, d); el.append(v);
+    b.onclick = () => player.toggle(m);
+    bar.onclick = e => { const r = bar.getBoundingClientRect(); player.seek(m, (e.clientX - r.left) / r.width); };
+  } else {
+    const t = document.createElement("div"); t.className = "txt"; t.textContent = m.text; el.append(t);
+  }
+  const f = document.createElement("div"); f.className = "foot";
+  if (m.user === me) {
+    const del = document.createElement("button"); del.className = "del"; del.textContent = "удалить";
+    del.onclick = async () => { if (!confirm("Удалить сообщение?")) return; try { await api("/api/delete", { id: m.id }); } catch (e) { toast(e.message); } };
+    f.append(del);
+  }
+  const tm = document.createElement("span"); tm.textContent = fmtTime(m.ts); f.append(tm);
+  el.append(f);
+  return el;
+}
+
+function renderAll() {
+  const list = $("#list"); list.innerHTML = "";
+  const arr = [...msgs.values()].sort((a, b) => a.ts - b.ts);
+  if (!arr.length) { list.innerHTML = '<div class="empty">Сообщений пока нет.<br>Нажмите на микрофон, чтобы записать голосовое.</div>'; return; }
+  let day = "";
+  for (const m of arr) {
+    const d = fmtDay(m.ts);
+    if (d !== day) { day = d; const s = document.createElement("div"); s.className = "day"; s.textContent = d; list.append(s); }
+    list.append(msgEl(m));
+  }
+  player.refresh();
+  list.scrollTop = list.scrollHeight;
+}
+
+function addMsg(m, live) {
+  if (msgs.has(m.id)) return;
+  const list = $("#list");
+  const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 120;
+  msgs.set(m.id, m);
+  if (list.querySelector(".empty")) list.innerHTML = "";
+  const last = [...msgs.values()].filter(x => x.id !== m.id).sort((a, b) => b.ts - a.ts)[0];
+  if (!last || fmtDay(last.ts) !== fmtDay(m.ts)) { const s = document.createElement("div"); s.className = "day"; s.textContent = fmtDay(m.ts); list.append(s); }
+  list.append(msgEl(m));
+  if (nearBottom || m.user === me) list.scrollTop = list.scrollHeight;
+  if (live && m.user !== me) {
+    if (document.hidden) { unread++; document.title = "(" + unread + ") Голосовой чат"; beep(); }
+  }
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { unread = 0; document.title = "Голосовой чат"; } });
+
+let actx = null;
+function beep() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = 880; g.gain.setValueAtTime(0.06, actx.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.25);
+    o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.25);
+  } catch {}
+}
+
+/* ---------- плеер ---------- */
+const player = {
+  audio: new Audio(), cur: null,
+  el(m) { return document.getElementById("m-" + m.id); },
+  toggle(m) {
+    if (this.cur && this.cur.id === m.id) { this.audio.paused ? this.audio.play().catch(e => toast("Не удалось воспроизвести: " + e.message)) : this.audio.pause(); return; }
+    this.start(m, 0);
+  },
+  start(m, frac) {
+    this.stop();
+    this.cur = m; this.audio.src = "/media/" + m.file; this.audio.preload = "auto";
+    const go = () => { if (frac > 0 && m.dur) this.audio.currentTime = frac * m.dur; this.audio.play().catch(e => toast("Не удалось воспроизвести: " + e.message)); };
+    go();
+    heard.add(m.id); saveHeard();
+    const v = this.el(m)?.querySelector(".voice"); v && v.classList.remove("unheard");
+  },
+  seek(m, frac) {
+    frac = Math.min(1, Math.max(0, frac));
+    if (this.cur && this.cur.id === m.id) { if (m.dur) this.audio.currentTime = frac * m.dur; if (this.audio.paused) this.audio.play().catch(() => {}); }
+    else this.start(m, frac);
+  },
+  stop() { this.audio.pause(); const m = this.cur; this.cur = null; if (m) this.paint(m, 0, false); },
+  paint(m, frac, playing) {
+    const el = this.el(m); if (!el) return;
+    el.querySelector(".play").innerHTML = playing ? ICON_PAUSE : ICON_PLAY;
+    const bars = el.querySelectorAll(".bar i"), k = Math.round(frac * bars.length);
+    bars.forEach((b, i) => b.classList.toggle("p", i < k));
+    el.querySelector(".vdur").textContent = fmtDur(playing || frac > 0 ? frac * m.dur : m.dur);
+  },
+  refresh() { if (this.cur) this.paint(this.cur, this.frac(), !this.audio.paused); },
+  frac() {
+    const m = this.cur; if (!m) return 0;
+    const d = isFinite(this.audio.duration) && this.audio.duration > 0 ? this.audio.duration : m.dur;
+    return d ? Math.min(1, this.audio.currentTime / d) : 0;
+  },
+  next() { // автопроигрывание следующего голосового
+    const arr = [...msgs.values()].sort((a, b) => a.ts - b.ts);
+    const i = arr.findIndex(x => this.cur && x.id === this.cur.id);
+    const n = arr.slice(i + 1).find(x => x.type === "voice");
+    this.stop();
+    if (n && n.user !== me && !heard.has(n.id)) this.start(n, 0);
+  }
+};
+player.audio.addEventListener("timeupdate", () => player.refresh());
+player.audio.addEventListener("play", () => player.refresh());
+player.audio.addEventListener("pause", () => player.refresh());
+player.audio.addEventListener("ended", () => player.next());
+player.audio.addEventListener("error", () => { if (player.cur) { toast("Этот формат не поддерживается браузером"); player.stop(); } });
+
+/* ---------- текст ---------- */
+const textIn = $("#text");
+textIn.addEventListener("input", () => {
+  const has = textIn.value.trim().length > 0;
+  $("#sendText").classList.toggle("hidden", !has); $("#micBtn").classList.toggle("hidden", has);
+});
+async function sendText() {
+  const t = textIn.value.trim(); if (!t) return;
+  textIn.value = ""; textIn.dispatchEvent(new Event("input"));
+  try { addMsg(await api("/api/text", { text: t })); } catch (e) { toast(e.message); textIn.value = t; textIn.dispatchEvent(new Event("input")); }
+}
+$("#sendText").onclick = sendText;
+textIn.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); } });
+
+/* ---------- запись голоса ---------- */
+const rec = { mr: null, stream: null, chunks: [], t0: 0, timer: null, send: false, busy: false };
+
+function pickMime() {
+  if (!window.MediaRecorder) return null;
+  return ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4", "audio/webm"].find(t => MediaRecorder.isTypeSupported(t)) || "";
+}
+
+async function startRec() {
+  if (rec.mr || rec.busy) return;
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) { toast("Микрофон доступен только по HTTPS", 4000); return; }
+  const mime = pickMime();
+  if (mime === null) { toast("Браузер не умеет записывать звук"); return; }
+  rec.busy = true;
+  try {
+    rec.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  } catch (e) { rec.busy = false; toast("Нет доступа к микрофону: " + e.message, 4000); return; }
+  rec.busy = false;
+  rec.chunks = []; rec.send = false;
+  rec.mr = new MediaRecorder(rec.stream, mime ? { mimeType: mime, audioBitsPerSecond: 48000 } : {});
+  rec.mr.ondataavailable = e => { if (e.data && e.data.size) rec.chunks.push(e.data); };
+  rec.mr.onstop = finishRec;
+  rec.mr.start(250);
+  rec.t0 = Date.now();
+  player.stop();
+  $("#inputRow").classList.add("hidden"); $("#recRow").classList.remove("hidden");
+  $("#recTime").textContent = "0:00";
+  rec.timer = setInterval(() => {
+    const s = (Date.now() - rec.t0) / 1000;
+    $("#recTime").textContent = fmtDur(s);
+    if (s >= MAX_REC) stopRec(true);
+  }, 200);
+  if (pendingRelease) { pendingRelease = false; stopRec(true); }
+}
+
+function stopRec(send) {
+  if (!rec.mr) return;
+  rec.send = send;
+  clearInterval(rec.timer);
+  if (rec.mr.state !== "inactive") rec.mr.stop();
+  rec.stream.getTracks().forEach(t => t.stop());
+  $("#recRow").classList.add("hidden"); $("#inputRow").classList.remove("hidden");
+}
+
+async function finishRec() {
+  const mr = rec.mr; rec.mr = null;
+  const dur = (Date.now() - rec.t0) / 1000;
+  if (!rec.send) return;
+  if (dur < 0.7) { toast("Слишком короткое сообщение"); return; }
+  const type = (mr.mimeType || rec.chunks[0]?.type || "audio/webm").split(";")[0];
+  const blob = new Blob(rec.chunks, { type });
+  try {
+    const r = await fetch("/api/voice?dur=" + dur.toFixed(1), { method: "POST", credentials: "same-origin", headers: { "Content-Type": type }, body: blob });
+    const d = await r.json().catch(() => ({}));
+    if (r.status === 401) { showLogin(); return; }
+    if (!r.ok) throw new Error(d.error || ("Ошибка " + r.status));
+    addMsg(d);
+  } catch (e) { toast("Не отправлено: " + e.message, 4000); }
+}
+
+/* нажатие — старт/стоп; удержание > 400 мс — «рация»: отпустил = отправил */
+let pressAt = 0, pendingRelease = false;
+const mic = $("#micBtn");
+mic.addEventListener("pointerdown", e => { e.preventDefault(); pressAt = Date.now(); pendingRelease = false; startRec(); });
+/* слушаем на window: во время записи кнопка микрофона скрыта */
+const release = () => {
+  if (!pressAt) return;
+  const held = Date.now() - pressAt; pressAt = 0;
+  if (held > 400) { if (rec.mr) stopRec(true); else if (rec.busy) pendingRelease = true; }
+};
+window.addEventListener("pointerup", release);
+window.addEventListener("pointercancel", release);
+mic.addEventListener("contextmenu", e => e.preventDefault());
+$("#recSend").onclick = () => stopRec(true);
+$("#recCancel").onclick = () => stopRec(false);
+document.addEventListener("keydown", e => { if (e.key === "Escape" && rec.mr) stopRec(false); });
+
+/* ---------- старт ---------- */
+(async () => {
+  try { const r = await fetch("/api/me", { credentials: "same-origin" }); if (r.ok) { const d = await r.json(); return enterChat(d.name); } } catch {}
+  showLogin();
+})();
+</script>
+</body>
+</html>
